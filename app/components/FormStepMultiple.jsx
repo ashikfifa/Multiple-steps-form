@@ -12,7 +12,17 @@ import {
   FormLabel,
   FormMessage,
   FormControl,
+  FormDescription,
 } from "@/components/ui/form";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { Calendar } from "@/components/ui/calendar";
+import { format } from "date-fns";
+import { toast } from "@/hooks/use-toast";
 
 // Validation Schemas
 const schemas = [
@@ -20,24 +30,31 @@ const schemas = [
     name: z.string().nonempty("Name is required."),
     email: z.string().email("Invalid email address."),
     dob: z
-      .date({ required_error: "Date of Birth is required." })
-      .refine((val) => val < new Date(), "Date of Birth cannot be in the future."),
+      .string()
+      .nonempty("A date of birth is required.")
+      .transform((val) => new Date(val))
+      .refine((val) => !isNaN(val.getTime()), "Invalid date of birth."),
   }),
   z.object({
     address1: z.string().nonempty("Address Line 1 is required."),
     address2: z.string().optional(),
     city: z.string().nonempty("City is required."),
     state: z.string().nonempty("State is required."),
-    zip: z.string().nonempty("Zip is required."),
+    zip: z
+      .string()
+      .nonempty("Zip code is required.")
+      .refine((val) => /^\d+$/.test(val), "Zip code must be a number."),
   }),
-  z.object({
-    username: z.string().nonempty("Username is required."),
-    // password: z.string().min(4, "Password must be at least 4 characters."),
-    // confirmPassword: z.string().refine(
-    //   (value, ctx) => value === ctx.parent.password,
-    //   "Passwords must match."
-    // ),
-  }),
+  z
+    .object({
+      username: z.string().nonempty("Username is required."),
+      password: z.string().min(4, "Password must be at least 4 characters."),
+      confirmPassword: z.string().nonempty("Confirm Password is required."),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "Passwords must match.",
+      path: ["confirmPassword"],
+    }),
 ];
 
 const MultiStepForm = () => {
@@ -48,12 +65,12 @@ const MultiStepForm = () => {
     defaultValues: {
       name: "",
       email: "",
-      dob: null,
+      dob: "",
       address1: "",
       address2: "",
       city: "",
       state: "",
-      zip: 0,
+      zip: "",
       username: "",
       password: "",
       confirmPassword: "",
@@ -69,17 +86,32 @@ const MultiStepForm = () => {
     if (step > 0) setStep(step - 1);
   };
 
-  const onSubmit = (data) => {
+  //In this funtion i comment out API part
+  const onSubmit = async (data) => {
     const finalData = { ...formData, ...data };
-    console.log("Final Data:", finalData);
+    console.log("Form Data:", finalData);
+    // try{
+    //  await FormMultiApi(finalData);
+    toast({
+      title: "Success!",
+      description: "Your form has been submitted successfully.",
+      variant: "default", // You can use "success", "error", etc., if you've defined variants
+    });
+    // }
+    // catch(error){
+    //   console.log('error', error);
+
+    // }
   };
 
   return (
-    <div className="flex items-center justify-center mt-10">
+    <div className="flex items-center justify-center mt-2">
       <div className="border p-6 w-[500px] rounded-md">
         <Form {...form}>
           <form
-            onSubmit={form.handleSubmit(step === schemas.length - 1 ? onSubmit : nextStep)}
+            onSubmit={form.handleSubmit(
+              step === schemas.length - 1 ? onSubmit : nextStep
+            )}
             className="space-y-6"
           >
             {step === 0 && (
@@ -114,15 +146,46 @@ const MultiStepForm = () => {
                   control={form.control}
                   name="dob"
                   render={({ field }) => (
-                    <FormItem>
+                    <FormItem className="flex flex-col">
                       <FormLabel>Date of Birth</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="date"
-                          value={field.value ? field.value.toISOString().split("T")[0] : ""}
-                          onChange={(e) => field.onChange(e.target.value ? new Date(e.target.value) : null)}
-                        />
-                      </FormControl>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <FormControl>
+                            <Button
+                              variant={"outline"}
+                              className={
+                                ("w-[240px] pl-3 text-left font-normal",
+                                !field.value && "text-muted-foreground")
+                              }
+                            >
+                              {field.value ? (
+                                format(new Date(field.value), "PPP")
+                              ) : (
+                                <span>Pick a date</span>
+                              )}
+                              <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                            </Button>
+                          </FormControl>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={
+                              field.value ? new Date(field.value) : null
+                            }
+                            onSelect={(date) =>
+                              field.onChange(date ? date.toISOString() : null)
+                            }
+                            disabled={(date) =>
+                              date > new Date() || date < new Date("1900-01-01")
+                            }
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      <FormDescription>
+                        Your date of birth is used to calculate your age.
+                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -152,7 +215,10 @@ const MultiStepForm = () => {
                     <FormItem>
                       <FormLabel>Address Line 2 (Optional)</FormLabel>
                       <FormControl>
-                        <Input placeholder="Enter your address (Optional)" {...field} />
+                        <Input
+                          placeholder="Enter your address (Optional)"
+                          {...field}
+                        />
                       </FormControl>
                     </FormItem>
                   )}
