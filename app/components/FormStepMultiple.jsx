@@ -24,7 +24,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
 
-// Validation Schemas
+// Schemas
 const schemas = [
   z.object({
     name: z.string().nonempty("Name is required."),
@@ -107,7 +107,7 @@ const MultiStepForm = () => {
   };
 
   return (
-    <div className="flex items-center justify-center mt-2">
+    <div className="flex items-center justify-center mt-5">
       <div className="border p-6 w-[500px] rounded-md">
         <Form {...form}>
           <form
