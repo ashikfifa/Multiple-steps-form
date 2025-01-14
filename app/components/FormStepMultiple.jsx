@@ -97,6 +97,8 @@ const MultiStepForm = () => {
       description: "Your form has been submitted successfully.",
       variant: "default", // You can use "success", "error", etc., if you've defined variants
     });
+    form.reset();
+    setFormData({});
     // }
     // catch(error){
     //   console.log('error', error);
