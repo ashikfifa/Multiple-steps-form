@@ -1,5 +1,6 @@
 "use client";
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -23,6 +24,7 @@ import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { format } from "date-fns";
 import { toast } from "@/hooks/use-toast";
+import { Stepper } from "react-form-stepper";
 
 // Schemas
 const schemas = [
@@ -60,6 +62,7 @@ const schemas = [
 const MultiStepForm = () => {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({});
+  const [hydrated, setHydrated] = useState(false);
   const form = useForm({
     resolver: zodResolver(schemas[step]),
     defaultValues: {
@@ -86,29 +89,36 @@ const MultiStepForm = () => {
     if (step > 0) setStep(step - 1);
   };
 
-  //In this funtion i comment out API part
   const onSubmit = async (data) => {
     const finalData = { ...formData, ...data };
     console.log("Form Data:", finalData);
-    // try{
-    //  await FormMultiApi(finalData);
     toast({
       title: "Success!",
       description: "Your form has been submitted successfully.",
-      variant: "default", // You can use "success", "error", etc., if you've defined variants
+      variant: "default",
     });
     form.reset();
     setFormData({});
-    // }
-    // catch(error){
-    //   console.log('error', error);
-
-    // }
   };
+
+  useEffect(() => {
+    setHydrated(true);
+  }, []);
+
+  if (!hydrated) return null;
 
   return (
     <div className="flex items-center justify-center mt-5">
       <div className="border p-6 w-[500px] rounded-md">
+        {/* Stepper */}
+        <Stepper
+          activeStep={step}
+          steps={[
+            { label: "Personal Details" },
+            { label: "Address" },
+            { label: "Account Setup" },
+          ]}
+        />
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(
